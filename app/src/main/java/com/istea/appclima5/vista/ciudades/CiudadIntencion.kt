@@ -8,6 +8,6 @@ sealed class CiudadIntencion {
         val lon: Double,
         val country: String
     ) : CiudadIntencion()
-    data object BuscarPorGeolocalizacion : CiudadIntencion()
+    data class BuscarPorGeolocalizacion(val lat: Double, val lon: Double) : CiudadIntencion()
     data class ActualizarTexto(val texto: String) : CiudadIntencion()
 }

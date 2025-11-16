@@ -79,6 +79,12 @@ class RepositorioMock {
             }?.name ?: "Ciudad"
         )
     }
+    suspend fun buscarCiudadPorCoordenada(lat: Double, lon: Double): List<Ciudad> {
+        if (lat == 0.0 && lon == 0.0) {
+            throw Exception("Error simulado en búsqueda")
+        }
+        return ciudades.filter { it.lat == lat && it.lon == lon }
+    }
 
     suspend fun traerPronostico(nombre: String): List<ListForecast> {
         val baseTime = System.currentTimeMillis() / 1000
@@ -137,4 +143,10 @@ class RepositorioMockError {
     suspend fun traerPronostico(nombre: String): List<ListForecast> {
         throw Exception("Error al obtener pronóstico")
     }
+
+    suspend fun buscarCiudadPorCoordenada(lat: Double, lon: Double): List<Ciudad> {
+        throw Exception("Error de conexión simulado")
+    }
 }
+
+

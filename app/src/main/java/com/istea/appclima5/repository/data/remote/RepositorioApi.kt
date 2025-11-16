@@ -81,4 +81,25 @@ class RepositorioApi {
             throw Exception("Error al traer pronóstico: ${e.message}")
         }
     }
+
+    suspend fun buscarCiudadPorCoordenada(lat: Double, lon: Double): List<Ciudad> {
+        try {
+            val respuesta = cliente.get("https://api.openweathermap.org/geo/1.0/reverse") {
+                parameter("lat", lat)
+                parameter("lon", lon)
+                parameter("limit", 100)
+                parameter("appid", apiKey)
+        }
+            if (respuesta.status == HttpStatusCode.OK) {
+                return respuesta.body<List<Ciudad>>()
+            } else {
+                throw Exception("Error al buscar ciudad: ${respuesta.status}")
+            }
+        } catch (e: Exception) {
+            throw Exception("Error al buscar ciudad: ${e.message}")
+        }
+
+    }
+
+
 }

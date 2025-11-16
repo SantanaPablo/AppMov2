@@ -27,6 +27,7 @@ class Repositorio(private val usarMock: Boolean = true) {
         }
     }
 
+
     suspend fun traerPronostico(nombre: String): List<ListForecast> {
         return if (usarMock) {
             repositorioMock.traerPronostico(nombre)
@@ -34,4 +35,15 @@ class Repositorio(private val usarMock: Boolean = true) {
             repositorioApi.traerPronostico(nombre)
         }
     }
+
+    suspend fun buscarCiudadPorCoordenada(lat: Double, lon: Double) : List<Ciudad> {
+        return if (usarMock) {
+            repositorioMock.buscarCiudadPorCoordenada(lat, lon)
+        } else {
+            repositorioApi.buscarCiudadPorCoordenada(lat, lon)
+        }
+    }
 }
+
+
+

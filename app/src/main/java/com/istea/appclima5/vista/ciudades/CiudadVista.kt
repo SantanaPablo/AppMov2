@@ -34,7 +34,7 @@ fun CiudadVista(
     ) { isGranted ->
         if (isGranted) {
             viewModel.obtenerUbicacionActual(context) { lat, lon ->
-                viewModel.ejecutar(CiudadIntencion.BuscarCiudad("${lat},${lon}"))
+                viewModel.ejecutar(CiudadIntencion.BuscarPorGeolocalizacion(lat, lon))
             }
         }
     }
@@ -66,7 +66,6 @@ fun CiudadVista(
                     IconButton(
                         onClick = {
                             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            viewModel.ejecutar(CiudadIntencion.BuscarPorGeolocalizacion)
                         }
                     ) {
                         Icon(Icons.Default.MyLocation, contentDescription = "Geolocalización")

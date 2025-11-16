@@ -3,10 +3,11 @@ package com.istea.appclima5.vista.ciudad
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import com.istea.appclima5.repository.Repositorio
 import com.istea.appclima5.repository.data.local.ConfiguracionLocal
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,7 @@ class CiudadViewModel(
                 intencion.lon,
                 intencion.country
             )
-            is CiudadIntencion.BuscarPorGeolocalizacion -> buscarPorGeolocalizacion()
+            is CiudadIntencion.BuscarPorGeolocalizacion -> buscarPorGeolocalizacion(intencion.lat, intencion.lon)
             is CiudadIntencion.ActualizarTexto -> actualizarTexto(intencion.texto)
         }
     }
@@ -61,7 +62,7 @@ class CiudadViewModel(
         }
     }
 
-    private fun buscarPorGeolocalizacion() {
+    private fun buscarPorGeolocalizacion(lat: Double, lon: Double) {
         _estado.value = CiudadEstado.Cargando
     }
 
@@ -80,10 +81,37 @@ class CiudadViewModel(
         ) {
             val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                location?.let {
-                    onUbicacion(it.latitude, it.longitude)
+                if (location != null) {
+                    onUbicacion(location.latitude, location.longitude)
+                } else {
+                    solicitarNuevaUbicacion(fusedLocationClient, onUbicacion)
                 }
             }
+        }
+    }
+
+    private fun solicitarNuevaUbicacion(fusedLocationClient: FusedLocationProviderClient, onUbicacion: (Double, Double) -> Unit) {
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY, 10000L
+        ).build()
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                val location = locationResult.lastLocation
+                if (location != null) {
+                    onUbicacion(location.latitude, location.longitude)
+                    fusedLocationClient.removeLocationUpdates(this)
+                }
+            }
+        }
+
+        try {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
         }
     }
 }
