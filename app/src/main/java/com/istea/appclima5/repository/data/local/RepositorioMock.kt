@@ -69,7 +69,7 @@ class RepositorioMock {
                 temp_min = 22.0,
                 temp_max = 28.0,
                 pressure = 1013,
-                humidity = 65
+                humidity = 99
             ),
             wind = Wind(speed = 5.5, deg = 180),
             clouds = Clouds(all = 10),
@@ -80,10 +80,9 @@ class RepositorioMock {
         )
     }
     suspend fun buscarCiudadPorCoordenada(lat: Double, lon: Double): List<Ciudad> {
-        if (lat == 0.0 && lon == 0.0) {
-            throw Exception("Error simulado en búsqueda")
-        }
-        return ciudades.filter { it.lat == lat && it.lon == lon }
+        return listOf(
+            bsAs.copy(name = "Ubicación Mock (BsAs)")
+        )
     }
 
     suspend fun traerPronostico(nombre: String): List<ListForecast> {

@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current.applicationContext
                 val configuracionLocal = remember { ConfiguracionLocal(context) }
 
-                val repositorio = remember { Repositorio(usarMock = false) }
+                val repositorio = remember { Repositorio(usarMock = true) }
 
                 val factory = remember { ViewModelFactory(repositorio, configuracionLocal) }
                 val ciudadGuardada = remember { configuracionLocal.obtenerCiudadGuardada() }
