@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.istea.appclima5.repository.domain.model.Clima
 import com.istea.appclima5.repository.domain.model.ListForecast
+import com.istea.appclima5.utils.WeatherIconVector
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -45,7 +47,6 @@ fun ClimaVista(
         viewModel.eventosUi.collect { evento ->
             when (evento) {
                 is ClimaEventoUi.CambiarCiudad -> onCambiarCiudad()
-
                 is ClimaEventoUi.CompartirTexto -> {
                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -53,7 +54,6 @@ fun ClimaVista(
                     }
                     context.startActivity(Intent.createChooser(sendIntent, "Compartir clima"))
                 }
-
                 is ClimaEventoUi.MostrarMensaje -> {
                     snackbarHostState.showSnackbar(evento.mensaje)
                 }
@@ -139,6 +139,21 @@ fun ClimaVista(
     }
 }
 
+@Composable
+fun DetalleItem(label: String, valor: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = valor,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
 
 @Composable
 fun DetalleClimaHoy(clima: Clima, nombre: String) {
@@ -146,7 +161,8 @@ fun DetalleClimaHoy(clima: Clima, nombre: String) {
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
             Modifier
@@ -159,6 +175,13 @@ fun DetalleClimaHoy(clima: Clima, nombre: String) {
                 text = nombre,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            WeatherIconVector(
+                desc = clima.weather.firstOrNull()?.description ?: "",
+                modifier = Modifier.size(64.dp)
             )
 
             Spacer(Modifier.height(8.dp))
@@ -200,35 +223,12 @@ fun DetalleClimaHoy(clima: Clima, nombre: String) {
     }
 }
 
-
-@Composable
-fun DetalleItem(label: String, valor: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = valor,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-
 @Composable
 fun PronosticoGrafico(pronostico: List<ListForecast>) {
-    val formatterEntrada = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     val formatterSalida = DateTimeFormatter.ofPattern("dd/MM")
 
     val pronosticoPorDia = pronostico
-        .groupBy { f ->
-            Instant.ofEpochSecond(f.dt)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
-        }
+        .groupBy { f -> Instant.ofEpochSecond(f.dt).atZone(ZoneId.systemDefault()).toLocalDate() }
         .map { (fecha, forecasts) ->
             val tempMax = forecasts.maxOf { it.main.temp_max }
             val tempMin = forecasts.minOf { it.main.temp_min }
@@ -252,7 +252,6 @@ fun PronosticoGrafico(pronostico: List<ListForecast>) {
     }
 }
 
-
 @Composable
 fun PronosticoDiaCard(
     fechaFormateada: String,
@@ -262,7 +261,8 @@ fun PronosticoDiaCard(
 ) {
     Card(
         modifier = Modifier.width(120.dp),
-        elevation = CardDefaults.cardElevation(2.dp)
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
             Modifier
@@ -275,6 +275,13 @@ fun PronosticoDiaCard(
                 text = fechaFormateada,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(8.dp))
+            
+            WeatherIconVector(
+                desc = descripcion,
+                modifier = Modifier.size(36.dp)
             )
 
             Spacer(Modifier.height(8.dp))

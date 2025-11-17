@@ -7,7 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.istea.appclima5.repository.domain.model.Ciudad
@@ -48,9 +51,12 @@ fun CiudadVista(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Seleccionar Ciudad") })
+            TopAppBar(
+                title = { Text("Seleccionar Ciudad") }
+            )
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -84,32 +90,42 @@ fun CiudadVista(
             Spacer(Modifier.height(16.dp))
 
             when (val e = estado) {
+
                 CiudadEstado.Vacio -> EstadoTexto("Busca una ciudad para comenzar")
+
                 CiudadEstado.Cargando -> EstadoCargando()
-                is CiudadEstado.Error -> EstadoTexto(e.mensaje, esError = true)
+
+                is CiudadEstado.Error ->
+                    EstadoTexto(e.mensaje, esError = true)
 
                 is CiudadEstado.Exitoso -> {
                     if (e.ciudades.isEmpty()) {
                         EstadoTexto("No se encontraron ciudades")
                     } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(e.ciudades) { ciudad ->
-                                CiudadItem(ciudad) {
-                                    viewModel.ejecutar(
-                                        CiudadIntencion.SeleccionarCiudad(
+
+                                CiudadItem(
+                                    ciudad = ciudad,
+                                    onClick = {
+                                        viewModel.ejecutar(
+                                            CiudadIntencion.SeleccionarCiudad(
+                                                ciudad.name,
+                                                ciudad.lat,
+                                                ciudad.lon,
+                                                ciudad.country
+                                            )
+                                        )
+
+                                        onCiudadSeleccionada(
                                             ciudad.name,
                                             ciudad.lat,
                                             ciudad.lon,
                                             ciudad.country
                                         )
-                                    )
-                                    onCiudadSeleccionada(
-                                        ciudad.name,
-                                        ciudad.lat,
-                                        ciudad.lon,
-                                        ciudad.country
-                                    )
-                                }
+                                    }
+                                )
                             }
                         }
                     }
@@ -127,7 +143,9 @@ private fun EstadoTexto(texto: String, esError: Boolean = false) {
     ) {
         Text(
             text = texto,
-            color = if (esError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (esError) MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium
         )
     }
 }
@@ -148,22 +166,45 @@ fun CiudadItem(ciudad: Ciudad, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(ciudad.name, style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier
+                .padding(18.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
 
-            Text(
-                "${ciudad.state ?: ""} ${ciudad.country}".trim(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(34.dp)
             )
 
-            Text(
-                "Lat: ${ciudad.lat}, Lon: ${ciudad.lon}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(Modifier.width(16.dp))
+
+            Column {
+
+                Text(
+                    ciudad.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    ciudad.country,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    "Lat: ${ciudad.lat} | Lon: ${ciudad.lon}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
