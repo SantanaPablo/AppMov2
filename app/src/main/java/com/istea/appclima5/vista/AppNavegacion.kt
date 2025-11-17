@@ -14,7 +14,7 @@ import com.istea.appclima5.ViewModelFactory
 import com.istea.appclima5.repository.data.local.ConfiguracionLocal
 import com.istea.appclima5.router.Ruta
 import com.istea.appclima5.vista.ciudad.CiudadViewModel
-import com.istea.appclima5.vista.ciudad.CiudadVista
+import com.istea.appclima5.vista.ciudades.CiudadVista
 import com.istea.appclima5.vista.clima.ClimaViewModel
 import com.istea.appclima5.vista.clima.ClimaVista
 

@@ -1,6 +1,7 @@
 package com.istea.appclima5.vista.clima
 
 import android.content.Intent
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -19,8 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.istea.appclima5.repository.domain.model.Clima
 import com.istea.appclima5.repository.domain.model.ListForecast
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,27 +35,51 @@ fun ClimaVista(
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.ejecutar(ClimaIntencion.CargarClima(nombre, lat, lon))
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.eventosUi.collect { evento ->
+            when (evento) {
+                is ClimaEventoUi.CambiarCiudad -> onCambiarCiudad()
+
+                is ClimaEventoUi.CompartirTexto -> {
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, evento.texto)
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, "Compartir clima"))
+                }
+
+                is ClimaEventoUi.MostrarMensaje -> {
+                    snackbarHostState.showSnackbar(evento.mensaje)
+                }
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Clima") },
                 actions = {
-                    IconButton(onClick = onCambiarCiudad) { //este boton pueden agregarlo donde quieran y cambiarle el icono si quieren
+                    IconButton(onClick = { viewModel.ejecutar(ClimaIntencion.CambiarCiudad) }) {
                         Icon(Icons.Default.LocationOn, contentDescription = "Cambiar ciudad")
                     }
                 }
             )
         }
     ) { padding ->
+
         when (val estadoActual = estado) {
-            is ClimaEstado.Cargando -> {
+
+            ClimaEstado.Cargando -> {
                 Box(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxSize()
                         .padding(padding),
                     contentAlignment = Alignment.Center
@@ -61,55 +87,50 @@ fun ClimaVista(
                     CircularProgressIndicator()
                 }
             }
+
             is ClimaEstado.Exitoso -> {
                 Column(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxSize()
                         .padding(padding)
                         .padding(16.dp)
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Detalle del clima actual
-                    DetalleClimaHoy(clima = estadoActual.clima, nombre = estadoActual.nombreCiudad)
 
-                    // Boton compartir
+                    DetalleClimaHoy(
+                        clima = estadoActual.clima,
+                        nombre = estadoActual.nombreCiudad
+                    )
+
                     Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, viewModel.obtenerTextoCompartir())
-                            }
-                            context.startActivity(Intent.createChooser(intent, "Compartir clima"))
-                        },
+                        onClick = { viewModel.ejecutar(ClimaIntencion.Compartir) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text("Compartir")
                     }
 
-                    Divider()
-
-                    // pronostico
                     Text(
-                        text = "Pronóstico próximos días",
+                        "Pronóstico próximos días",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
 
-                    PronosticoGrafico(pronostico = estadoActual.pronostico)
+                    PronosticoGrafico(estadoActual.pronostico)
                 }
             }
+
             is ClimaEstado.Error -> {
                 Box(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxSize()
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = estadoActual.mensaje,
+                        estadoActual.mensaje,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -118,24 +139,29 @@ fun ClimaVista(
     }
 }
 
+
 @Composable
 fun DetalleClimaHoy(clima: Clima, nombre: String) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+            Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             Text(
                 text = nombre,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "${clima.main.temp.toInt()}°C",
@@ -144,16 +170,15 @@ fun DetalleClimaHoy(clima: Clima, nombre: String) {
             )
 
             Text(
-                text = clima.weather.firstOrNull()?.description?.replaceFirstChar {
-                    it.uppercase()
-                } ?: "Desconocido",
+                text = clima.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercase() }
+                    ?: "Desconocido",
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 DetalleItem("Sensación", "${clima.main.feels_like.toInt()}°C")
@@ -161,25 +186,24 @@ fun DetalleClimaHoy(clima: Clima, nombre: String) {
                 DetalleItem("Viento", "${clima.wind.speed} m/s")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                DetalleItem("Mín", "${clima.main.temp_min.toInt()}°C")
-                DetalleItem("Máx", "${clima.main.temp_max.toInt()}°C")
+                DetalleItem("Min", "${clima.main.temp_min.toInt()}°C")
+                DetalleItem("Max", "${clima.main.temp_max.toInt()}°C")
                 DetalleItem("Presión", "${clima.main.pressure} hPa")
             }
         }
     }
 }
 
+
 @Composable
 fun DetalleItem(label: String, valor: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
@@ -193,45 +217,59 @@ fun DetalleItem(label: String, valor: String) {
     }
 }
 
+
 @Composable
 fun PronosticoGrafico(pronostico: List<ListForecast>) {
-    val pronosticoPorDia = pronostico.groupBy { forecast ->
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(forecast.dt * 1000))
-    }.map { (fecha, forecasts) ->
-        val tempMax = forecasts.maxOf { it.main.temp_max }
-        val tempMin = forecasts.minOf { it.main.temp_min }
-        val descripcion = forecasts.first().weather.firstOrNull()?.description ?: ""
-        Triple(fecha, tempMax, tempMin) to descripcion
-    }.take(5)
+    val formatterEntrada = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val formatterSalida = DateTimeFormatter.ofPattern("dd/MM")
+
+    val pronosticoPorDia = pronostico
+        .groupBy { f ->
+            Instant.ofEpochSecond(f.dt)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        }
+        .map { (fecha, forecasts) ->
+            val tempMax = forecasts.maxOf { it.main.temp_max }
+            val tempMin = forecasts.minOf { it.main.temp_min }
+            val descripcion = forecasts.first().weather.firstOrNull()?.description ?: ""
+            Triple(fecha, tempMax, tempMin) to descripcion
+        }
+        .take(5)
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(pronosticoPorDia) { (temps, descripcion) ->
             val (fecha, tempMax, tempMin) = temps
-            PronosticoDiaCard(fecha, tempMax, tempMin, descripcion)
+            PronosticoDiaCard(
+                fechaFormateada = fecha.format(formatterSalida),
+                tempMax = tempMax,
+                tempMin = tempMin,
+                descripcion = descripcion
+            )
         }
     }
 }
 
+
 @Composable
-fun PronosticoDiaCard(fecha: String, tempMax: Double, tempMin: Double, descripcion: String) {
+fun PronosticoDiaCard(
+    fechaFormateada: String,
+    tempMax: Double,
+    tempMin: Double,
+    descripcion: String
+) {
     Card(
-        modifier = Modifier.width(120.dp)
+        modifier = Modifier.width(120.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(
-            modifier = Modifier
+            Modifier
                 .padding(12.dp)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val formatoEntrada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val formatoSalida = SimpleDateFormat("dd/MM", Locale.getDefault())
-            val fechaFormateada = try {
-                formatoSalida.format(formatoEntrada.parse(fecha) ?: Date())
-            } catch (e: Exception) {
-                fecha
-            }
 
             Text(
                 text = fechaFormateada,
@@ -239,7 +277,7 @@ fun PronosticoDiaCard(fecha: String, tempMax: Double, tempMin: Double, descripci
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = descripcion.replaceFirstChar { it.uppercase() },
@@ -247,7 +285,7 @@ fun PronosticoDiaCard(fecha: String, tempMax: Double, tempMin: Double, descripci
                 maxLines = 2
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Text(
                 text = "${tempMax.toInt()}°",

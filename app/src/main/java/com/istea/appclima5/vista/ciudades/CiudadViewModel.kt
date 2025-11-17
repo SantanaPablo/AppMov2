@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.*
 import com.istea.appclima5.repository.Repositorio
 import com.istea.appclima5.repository.data.local.ConfiguracionLocal
+import com.istea.appclima5.vista.ciudades.CiudadEstado
+import com.istea.appclima5.vista.ciudades.CiudadIntencion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,12 +28,7 @@ class CiudadViewModel(
     fun ejecutar(intencion: CiudadIntencion) {
         when (intencion) {
             is CiudadIntencion.BuscarCiudad -> buscarCiudad(intencion.texto)
-            is CiudadIntencion.SeleccionarCiudad -> seleccionarCiudad(
-                intencion.nombre,
-                intencion.lat,
-                intencion.lon,
-                intencion.country
-            )
+            is CiudadIntencion.SeleccionarCiudad -> seleccionarCiudad(intencion)
             is CiudadIntencion.BuscarPorGeolocalizacion -> buscarPorGeolocalizacion(intencion.lat, intencion.lon)
             is CiudadIntencion.ActualizarTexto -> actualizarTexto(intencion.texto)
         }
@@ -54,11 +51,16 @@ class CiudadViewModel(
         }
     }
 
-    private fun seleccionarCiudad(nombre: String, lat: Double, lon: Double, country: String) {
+    private fun seleccionarCiudad(intencion: CiudadIntencion.SeleccionarCiudad) {
         try {
-            configuracionLocal.guardarCiudad(nombre, lat, lon, country)
+            configuracionLocal.guardarCiudad(
+                intencion.nombre,
+                intencion.lat,
+                intencion.lon,
+                intencion.country
+            )
         } catch (e: Exception) {
-            _estado.value = CiudadEstado.Error("Error al guardar ciudad: ${e.message}")
+            _estado.value = CiudadEstado.Error("Error al guardar ciudad seleccionada")
         }
     }
 
@@ -68,46 +70,52 @@ class CiudadViewModel(
             try {
                 val ciudades = repositorio.buscarCiudadPorCoordenada(lat, lon)
                 _estado.value = CiudadEstado.Exitoso(ciudades)
-
             } catch (e: Exception) {
                 _estado.value = CiudadEstado.Error("Error al buscar por coordenadas: ${e.message}")
             }
         }
     }
-       fun actualizarTexto(texto: String) {
-            val estadoActual = _estado.value
-            if (estadoActual is CiudadEstado.Exitoso) {
-                _estado.value = estadoActual.copy(textoBusqueda = texto)
-            }
-        }
 
-        fun obtenerUbicacionActual(context: Context, onUbicacion: (Double, Double) -> Unit) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                    if (location != null) {
-                        onUbicacion(location.latitude, location.longitude)
-                    } else {
-                        solicitarNuevaUbicacion(fusedLocationClient, onUbicacion)
-                    }
-                }
+    private fun actualizarTexto(texto: String) {
+        val actual = _estado.value
+        if (actual is CiudadEstado.Exitoso) {
+            _estado.value = actual.copy(textoBusqueda = texto)
+        }
+    }
+
+    fun obtenerUbicacionActual(context: Context, onUbicacion: (Double, Double) -> Unit) {
+        val permiso = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        if (permiso != PackageManager.PERMISSION_GRANTED) return
+
+        val client = LocationServices.getFusedLocationProviderClient(context)
+
+        client.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                onUbicacion(location.latitude, location.longitude)
+            } else {
+                solicitarNuevaUbicacion(client, onUbicacion)
             }
         }
     }
-        fun solicitarNuevaUbicacion(fusedLocationClient: FusedLocationProviderClient, onUbicacion: (Double, Double) -> Unit) {
+
+    private fun solicitarNuevaUbicacion(
+        fusedLocationClient: FusedLocationProviderClient,
+        onUbicacion: (Double, Double) -> Unit
+    ) {
         val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY, 10000L
+            Priority.PRIORITY_HIGH_ACCURACY,
+            8_000L
         ).build()
 
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                val location = locationResult.lastLocation
-                if (location != null) {
-                    onUbicacion(location.latitude, location.longitude)
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val loc = result.lastLocation
+                if (loc != null) {
+                    onUbicacion(loc.latitude, loc.longitude)
                     fusedLocationClient.removeLocationUpdates(this)
                 }
             }
@@ -116,9 +124,9 @@ class CiudadViewModel(
         try {
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
-                locationCallback,
+                callback,
                 Looper.getMainLooper()
             )
-        } catch (e: SecurityException) {
-        }
+        } catch (_: SecurityException) { }
     }
+}

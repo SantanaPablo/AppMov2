@@ -1,4 +1,4 @@
-package com.istea.appclima5.vista.ciudad
+package com.istea.appclima5.vista.ciudades
 
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.istea.appclima5.repository.domain.model.Ciudad
+import com.istea.appclima5.vista.ciudad.CiudadViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,13 +28,18 @@ fun CiudadVista(
     onCiudadSeleccionada: (String, Double, Double, String) -> Unit
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
-    var textoBusqueda by remember { mutableStateOf("") }
+    var texto by remember { mutableStateOf("") }
     val context = LocalContext.current
 
+    LaunchedEffect(texto) {
+        delay(350)
+        viewModel.ejecutar(CiudadIntencion.BuscarCiudad(texto))
+    }
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
             viewModel.obtenerUbicacionActual(context) { lat, lon ->
                 viewModel.ejecutar(CiudadIntencion.BuscarPorGeolocalizacion(lat, lon))
             }
@@ -41,115 +48,70 @@ fun CiudadVista(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Seleccionar Ciudad") }
-            )
+            TopAppBar(title = { Text("Seleccionar Ciudad") })
         }
     ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .fillMaxSize()
         ) {
-            // Buscador
+
             OutlinedTextField(
-                value = textoBusqueda,
+                value = texto,
                 onValueChange = {
-                    textoBusqueda = it
+                    texto = it
                     viewModel.ejecutar(CiudadIntencion.ActualizarTexto(it))
                 },
-                modifier = Modifier.fillMaxWidth(),
                 label = { Text("Buscar ciudad") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                leadingIcon = { Icon(Icons.Default.Search, null) },
                 trailingIcon = {
                     IconButton(
                         onClick = {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            locationPermissionLauncher.launch(
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            )
                         }
                     ) {
-                        Icon(Icons.Default.MyLocation, contentDescription = "Geolocalización")
+                        Icon(Icons.Default.MyLocation, contentDescription = null)
                     }
                 },
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
 
-            Button(
-                onClick = { viewModel.ejecutar(CiudadIntencion.BuscarCiudad(textoBusqueda)) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = textoBusqueda.isNotBlank()
-            ) {
-                Text("Buscar")
-            }
+            when (val e = estado) {
+                CiudadEstado.Vacio -> EstadoTexto("Busca una ciudad para comenzar")
+                CiudadEstado.Cargando -> EstadoCargando()
+                is CiudadEstado.Error -> EstadoTexto(e.mensaje, esError = true)
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Lista de ciudades
-            when (val estadoActual = estado) {
-                is CiudadEstado.Vacio -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Busca una ciudad para comenzar")
-                    }
-                }
-                is CiudadEstado.Cargando -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
                 is CiudadEstado.Exitoso -> {
-                    if (estadoActual.ciudades.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No se encontraron ciudades")
-                        }
+                    if (e.ciudades.isEmpty()) {
+                        EstadoTexto("No se encontraron ciudades")
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(estadoActual.ciudades) { ciudad ->
-                                CiudadItem(
-                                    ciudad = ciudad,
-                                    onClick = {
-                                        viewModel.ejecutar(
-                                            CiudadIntencion.SeleccionarCiudad(
-                                                ciudad.name,
-                                                ciudad.lat,
-                                                ciudad.lon,
-                                                ciudad.country
-                                            )
-                                        )
-                                        onCiudadSeleccionada(
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(e.ciudades) { ciudad ->
+                                CiudadItem(ciudad) {
+                                    viewModel.ejecutar(
+                                        CiudadIntencion.SeleccionarCiudad(
                                             ciudad.name,
                                             ciudad.lat,
                                             ciudad.lon,
                                             ciudad.country
                                         )
-                                    }
-                                )
+                                    )
+                                    onCiudadSeleccionada(
+                                        ciudad.name,
+                                        ciudad.lat,
+                                        ciudad.lon,
+                                        ciudad.country
+                                    )
+                                }
                             }
                         }
-                    }
-                }
-                is CiudadEstado.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = estadoActual.mensaje,
-                            color = MaterialTheme.colorScheme.error
-                        )
                     }
                 }
             }
@@ -158,27 +120,47 @@ fun CiudadVista(
 }
 
 @Composable
+private fun EstadoTexto(texto: String, esError: Boolean = false) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = texto,
+            color = if (esError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun EstadoCargando() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
 fun CiudadItem(ciudad: Ciudad, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-        ) {
+        Column(Modifier.padding(16.dp)) {
+            Text(ciudad.name, style = MaterialTheme.typography.titleMedium)
+
             Text(
-                text = ciudad.name,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "${ciudad.state ?: ""} ${ciudad.country}".trim(),
+                "${ciudad.state ?: ""} ${ciudad.country}".trim(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
             Text(
-                text = "Lat: ${ciudad.lat}, Lon: ${ciudad.lon}",
+                "Lat: ${ciudad.lat}, Lon: ${ciudad.lon}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

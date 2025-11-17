@@ -1,4 +1,4 @@
-package com.istea.appclima5.vista.ciudad
+package com.istea.appclima5.vista.ciudades
 
 sealed class CiudadIntencion {
     data class BuscarCiudad(val texto: String) : CiudadIntencion()

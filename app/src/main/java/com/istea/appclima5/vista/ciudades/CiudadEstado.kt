@@ -1,4 +1,4 @@
-package com.istea.appclima5.vista.ciudad
+package com.istea.appclima5.vista.ciudades
 
 import com.istea.appclima5.repository.domain.model.Ciudad
 
