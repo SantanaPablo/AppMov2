@@ -28,7 +28,7 @@ class ViewModelFactory(
 fun MainPage() {
     val context = LocalContext.current.applicationContext
     val configuracionLocal = remember { ConfiguracionLocal(context) }
-    val repositorio = remember { Repositorio(usarMock = true) }
+    val repositorio = remember { Repositorio(usarMock = false) }
     val factory = remember { ViewModelFactory(repositorio, configuracionLocal) }
     val ciudadGuardada = remember { configuracionLocal.obtenerCiudadGuardada() }
 

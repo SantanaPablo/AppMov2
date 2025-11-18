@@ -1,5 +1,5 @@
 package com.istea.appclima5.repository.data.remote
-
+import com.istea.appclima5.utils.Constantes
 import com.istea.appclima5.repository.domain.model.Ciudad
 import com.istea.appclima5.repository.domain.model.Clima
 import com.istea.appclima5.repository.domain.model.ForecastDTO
@@ -101,5 +101,19 @@ class RepositorioApi {
 
     }
 
+    suspend fun obtenerCiudadesSugeridas(): List<Ciudad> {
+        val listaSugerencias = mutableListOf<Ciudad>()
+
+        for (nombre in Constantes.CIUDADES_POPULARES) {
+            try {
+                val resultados = buscarCiudad(nombre)
+                if (resultados.isNotEmpty()) {
+                    listaSugerencias.add(resultados.first())
+                }
+            } catch (e: Exception) {
+            }
+        }
+        return listaSugerencias
+    }
 
 }

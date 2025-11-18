@@ -25,6 +25,10 @@ class CiudadViewModel(
     private val _estado = MutableStateFlow<CiudadEstado>(CiudadEstado.Vacio)
     val estado: StateFlow<CiudadEstado> = _estado.asStateFlow()
 
+    init {
+        cargarSugerenciasIniciales()
+    }
+
     fun ejecutar(intencion: CiudadIntencion) {
         when (intencion) {
             is CiudadIntencion.BuscarCiudad -> buscarCiudad(intencion.texto)
@@ -128,5 +132,17 @@ class CiudadViewModel(
                 Looper.getMainLooper()
             )
         } catch (_: SecurityException) { }
+    }
+
+    private fun cargarSugerenciasIniciales() {
+        viewModelScope.launch {
+            _estado.value = CiudadEstado.Cargando
+            try {
+                val sugerencias = repositorio.obtenerCiudadesSugeridas()
+                _estado.value = CiudadEstado.Exitoso(sugerencias, "")
+            } catch (e: Exception) {
+                _estado.value = CiudadEstado.Error("Error al cargar sugerencias")
+            }
+        }
     }
 }
