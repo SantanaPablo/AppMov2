@@ -46,10 +46,8 @@ class Repositorio(private val usarMock: Boolean = true) {
 
     suspend fun obtenerCiudadesSugeridas(): List<Ciudad> {
         return if (usarMock) {
-            // El RepositorioMock debe implementar la lógica para devolver las sugerencias
             repositorioMock.obtenerCiudadesSugeridas()
         } else {
-            // El RepositorioApi debe implementar la lógica para traer sugerencias (ej. una lista fija o un endpoint dedicado)
             repositorioApi.obtenerCiudadesSugeridas()
         }
     }

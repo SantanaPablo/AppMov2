@@ -87,35 +87,33 @@ class RepositorioMock {
 
     suspend fun obtenerCiudadesSugeridas(): List<Ciudad> {
         return listOf(
-            // El campo 'name' debe ser el primer parámetro
-            // El campo 'state' es opcional (se puede omitir o pasar como null)
 
             Ciudad(
                 name = "Buenos Aires",
                 lat = -34.6037,
                 lon = -58.3816,
-                country = "AR",
+                country = "Argentina",
                 state = "Buenos Aires"
             ),
             Ciudad(
                 name = "Madrid",
                 lat = 40.4168,
                 lon = -3.7038,
-                country = "ES"
+                country = "España"
                 // 'state' se omite o es null
             ),
             Ciudad(
                 name = "New York",
                 lat = 40.7128,
                 lon = -74.0060,
-                country = "US",
+                country = "Estados Unidos",
                 state = "New York"
             ),
             Ciudad(
                 name = "Sídney",
                 lat = -33.8688,
                 lon = 151.2093,
-                country = "AU"
+                country = "Australia"
             )
         )
     }

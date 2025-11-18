@@ -40,7 +40,7 @@ class CiudadViewModel(
 
     private fun buscarCiudad(texto: String) {
         if (texto.isBlank()) {
-            _estado.value = CiudadEstado.Vacio
+            cargarSugerenciasIniciales()
             return
         }
 

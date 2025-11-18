@@ -35,8 +35,10 @@ fun CiudadVista(
     val context = LocalContext.current
 
     LaunchedEffect(texto) {
-        delay(350)
-        viewModel.ejecutar(CiudadIntencion.BuscarCiudad(texto))
+        if (texto.length >= 2 || texto.isBlank()) {
+            delay(350)
+            viewModel.ejecutar(CiudadIntencion.BuscarCiudad(texto))
+        }
     }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
