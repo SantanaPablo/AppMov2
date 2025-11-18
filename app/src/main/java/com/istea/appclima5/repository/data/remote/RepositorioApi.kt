@@ -14,7 +14,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class RepositorioApi {
-    private val apiKey = "95e93e4f7a36fc511148468d1774792d"
+    private val apiKey = "1cf7e82149f9a9a855dccecbdcff3778"
 
     private val cliente = HttpClient() {
         install(ContentNegotiation) {
