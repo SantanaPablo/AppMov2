@@ -3,7 +3,7 @@ package com.istea.appclima5.repository.data.local
 import android.content.Context
 import android.content.SharedPreferences
 
-class ConfiguracionLocal(context: Context) {
+class ConfiguracionLocal(context: Context) : IConfiguracionLocal {
 
     private val prefs: SharedPreferences = context.getSharedPreferences(
         "app_clima_prefs",
@@ -17,7 +17,7 @@ class ConfiguracionLocal(context: Context) {
         private const val KEY_CIUDAD_COUNTRY = "ciudad_country"
     }
 
-    fun guardarCiudad(nombre: String, lat: Double, lon: Double, country: String) {
+    override fun guardarCiudad(nombre: String, lat: Double, lon: Double, country: String) {
         prefs.edit().apply {
             putString(KEY_CIUDAD_NOMBRE, nombre)
             putFloat(KEY_CIUDAD_LAT, lat.toFloat())
@@ -27,7 +27,7 @@ class ConfiguracionLocal(context: Context) {
         }
     }
 
-    fun obtenerCiudadGuardada(): CiudadGuardada? {
+    override fun obtenerCiudadGuardada(): CiudadGuardada? {
         val nombre = prefs.getString(KEY_CIUDAD_NOMBRE, null)
         val lat = prefs.getFloat(KEY_CIUDAD_LAT, 0f)
         val lon = prefs.getFloat(KEY_CIUDAD_LON, 0f)
@@ -45,7 +45,7 @@ class ConfiguracionLocal(context: Context) {
         }
     }
 
-    fun borrarCiudad() {
+    override fun borrarCiudad() {
         prefs.edit().clear().apply()
     }
 }

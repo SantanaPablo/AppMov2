@@ -16,10 +16,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.istea.appclima5.repository.data.local.IConfiguracionLocal
 
 class CiudadViewModel(
     private val repositorio: Repositorio,
-    private val configuracionLocal: ConfiguracionLocal
+    private val configuracionLocal: IConfiguracionLocal
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow<CiudadEstado>(CiudadEstado.Vacio)

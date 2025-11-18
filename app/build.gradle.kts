@@ -2,10 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
 
-    // Necesario para @Serializable
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 
-    // Necesario para Compose moderno (1.5.11)
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -64,14 +62,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Navigation con rutas tipadas (requiere 2.8.0+)
     implementation("androidx.navigation:navigation-compose:2.8.0-alpha08")
 
-    // ViewModel
+
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
 
-    // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Ktor
@@ -86,4 +82,7 @@ dependencies {
 
     // Imágenes
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.x")
 }
